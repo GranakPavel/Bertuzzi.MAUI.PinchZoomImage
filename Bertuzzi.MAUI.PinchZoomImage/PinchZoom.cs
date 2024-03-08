@@ -7,7 +7,11 @@
         private double _xOffset = 0;
         private double _yOffset = 0;
         private bool _secondDoubleTapp = false;
-
+        // Fixed an issue where after PinchZoom() one of the fingers remained on the screen and the user wanted to pan. The figure jumped uncomfortably. 
+        // It now works very similar to the google photo viewer app.
+        private double _xOffsetCorrection = 0;
+        private double _yOffsetCorrection = 0;
+        
         public PinchZoom()
         {
             var pinchGesture = new PinchGestureRecognizer();
@@ -74,8 +78,8 @@
             {
                 case GestureStatus.Running:
 
-                    var newX = (e.TotalX * Scale) + _xOffset;
-                    var newY = (e.TotalY * Scale) + _yOffset;
+                    var newX = (e.TotalX * Scale) + _xOffset - _xOffsetCorrection;
+                    var newY = (e.TotalY * Scale) + _yOffset - _yOffsetCorrection;
 
                     var width = (Content.Width * Content.Scale);
                     var height = (Content.Height * Content.Scale);
@@ -123,12 +127,29 @@
                         newY = 0;
                     }
 
-                    Content.TranslationX = newX;
-                    Content.TranslationY = newY;
+                    if (_xOffsetCorrection == 0 & _yOffsetCorrection == 0)
+                    {
+                        _xOffsetCorrection = newX - _xOffset;
+                        _yOffsetCorrection = newY - _yOffset;
+                        Content.TranslationX = newX - _xOffsetCorrection;
+                        Content.TranslationY = newY - _yOffsetCorrection;
+                        //Console.WriteLine(string.Format("OnPanUpdated Running: _xOffsetCorrection:{0} _yOffsetCorrection:{1}", _xOffsetCorrection, _yOffsetCorrection));
+                        //Console.WriteLine(string.Format("OnPanUpdated Running: X:{0} Y:{1}", Content.TranslationX, Content.TranslationY));
+                    }
+                    else
+                    {
+                        Content.TranslationX = newX;
+                        Content.TranslationY = newY;
+                        //Console.WriteLine(string.Format("OnPanUpdated Running: X:{0} Y:{1}", Content.TranslationX, Content.TranslationY));
+                    }
                     break;
                 case GestureStatus.Completed:
                     _xOffset = Content.TranslationX;
                     _yOffset = Content.TranslationY;
+                    _currentScale = Content.Scale;
+                    _xOffsetCorrection = 0;
+                    _yOffsetCorrection = 0;
+
                     break;
                 case GestureStatus.Started:
                     break;
